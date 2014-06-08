@@ -6,50 +6,34 @@ from pyramid import testing
 from .models import DBSession
 
 
-class TestMyViewSuccessCondition(unittest.TestCase):
+class TestTunerSetup(unittest.TestCase):
+
     def setUp(self):
         self.config = testing.setUp()
         from sqlalchemy import create_engine
-        engine = create_engine('sqlite://')
         from .models import (
             Base,
-            MyModel,
-            )
+            DBSession,
+            Tuner,
+        )
+        engine = create_engine('sqlite://')
         DBSession.configure(bind=engine)
         Base.metadata.create_all(engine)
         with transaction.manager:
-            model = MyModel(name='one', value=55)
+            model = Tuner(name='Base Tuner')
             DBSession.add(model)
 
     def tearDown(self):
         DBSession.remove()
         testing.tearDown()
 
-    def test_passing_view(self):
-        from .views import my_view
-        request = testing.DummyRequest()
-        info = my_view(request)
-        self.assertEqual(info['one'].name, 'one')
-        self.assertEqual(info['project'], 'dvr')
-
-
-class TestMyViewFailureCondition(unittest.TestCase):
-    def setUp(self):
-        self.config = testing.setUp()
-        from sqlalchemy import create_engine
-        engine = create_engine('sqlite://')
+    def test_tuner_setup(self):
+        from .views import index
         from .models import (
-            Base,
-            MyModel,
-            )
-        DBSession.configure(bind=engine)
-
-    def tearDown(self):
-        DBSession.remove()
-        testing.tearDown()
-
-    def test_failing_view(self):
-        from .views import my_view
+            Tuner,
+        )
         request = testing.DummyRequest()
-        info = my_view(request)
-        self.assertEqual(info.status_int, 500)
+        page = index(request)
+        tuners = DBSession.query(Tuner).all()
+        self.assertEqual(page['recordings'], [])
+        self.assertEqual(page['tuners'], tuners)

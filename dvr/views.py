@@ -1,36 +1,60 @@
-from pyramid.response import Response
+import datetime
+
 from pyramid.view import view_config
 
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy import (
+    and_,
+)
 
 from .models import (
     DBSession,
-    MyModel,
-    )
+    Recording,
+    Tuner,
+)
 
 
-@view_config(route_name='home', renderer='templates/mytemplate.pt')
-def my_view(request):
-    try:
-        one = DBSession.query(MyModel).filter(MyModel.name == 'one').first()
-    except DBAPIError:
-        return Response(conn_err_msg, content_type='text/plain', status_int=500)
-    return {'one': one, 'project': 'dvr'}
+def get_current_time():
+    return datetime.datetime.utcnow()
 
 
-conn_err_msg = """\
-Pyramid is having a problem using your SQL database.  The problem
-might be caused by one of the following things:
+def get_current_recordings():
+    return get_recordings(get_current_time())
 
-1.  You may need to run the "initialize_dvr_db" script
-    to initialize your database tables.  Check your virtual
-    environment's "bin" directory for this script and try to run it.
 
-2.  Your database server may not be running.  Check that the
-    database server referred to by the "sqlalchemy.url" setting in
-    your "development.ini" file is running.
+def get_recordings(recording_time):
+    recordings = DBSession.query(Recording).filter(
+        and_(
+            recording_time >= Recording.start_time,
+            recording_time < Recording.end_time,
+        )
+    ).all()
+    return recordings
 
-After you fix the problem, please restart the Pyramid application to
-try it again.
-"""
 
+@view_config(route_name='index', renderer='templates/index.pt')
+def index(request):
+    recordings = DBSession.query(Recording).all()
+    tuners = DBSession.query(Tuner).all()
+    return {
+        'recordings': recordings,
+        'tuners': tuners,
+    }
+
+
+@view_config(
+    route_name='api_recordings',
+    renderer='json',
+    request_method="GET",
+)
+def api_recordings(request):
+    return [{
+        "channel": x.channel,
+        "tuner": x.tuner.id,
+        "start_time": x.start_time.strftime("%s"),
+        "end_time": x.end_time.strftime("%s"),
+    } for x in get_current_recordings()]
+
+
+def includeme(config):
+    config.add_route('index', '/')
+    config.add_route('api_recordings', '/api/v1/recordings')
