@@ -21,6 +21,10 @@ Base = declarative_base()
 
 
 class Tuner(Base):
+
+    def __init__(self, *args, **kwargs):
+        Base.__init__(self, *args, **kwargs)
+
     __tablename__ = 'tuners'
     id = Column(Integer, primary_key=True)
     max_shows_to_record = Column(Integer, default=1)
@@ -30,6 +34,10 @@ class Tuner(Base):
 
 
 class Recording(Base):
+
+    def __init__(self, *args, **kwargs):
+        Base.__init__(self, *args, **kwargs)
+
     __tablename__ = 'recordings'
     id = Column(Integer, primary_key=True)
     tuner_id = Column(Integer, ForeignKey("tuners.id"))
