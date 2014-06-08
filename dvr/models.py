@@ -4,6 +4,7 @@ from sqlalchemy import (
     Text,
     DateTime,
     ForeignKey,
+    and_,
 )
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -15,6 +16,9 @@ from sqlalchemy.orm import (
 )
 
 from zope.sqlalchemy import ZopeTransactionExtension
+
+from .assets import get_current_time
+
 
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
@@ -31,6 +35,26 @@ class Tuner(Base):
     name = Column(Text)
 
     recordings = relationship("Recording", backref="tuner")
+
+    @classmethod
+    def get_current_recordings(klass):
+        return klass.get_recordings(get_current_time())
+
+    @classmethod
+    def get_recordings(klass, record_time):
+        recordings = DBSession.query(Recording).filter(
+            and_(
+                record_time >= Recording.start_time,
+                record_time < Recording.end_time,
+            )
+        ).all()
+        return recordings
+
+    @classmethod
+    def can_record(klass, record_time):
+        return len(
+            klass.get_recordings(record_time)
+        ) < klass.max_shows_to_record
 
 
 class Recording(Base):

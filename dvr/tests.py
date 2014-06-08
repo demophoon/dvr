@@ -4,6 +4,10 @@ import transaction
 from pyramid import testing
 
 from .models import DBSession
+from .assets import (
+    get_current_time,
+    convert_to_utc_seconds,
+)
 
 
 class TestTunerSetup(unittest.TestCase):
@@ -65,22 +69,43 @@ class TestSetRecording(unittest.TestCase):
             api_get_recordings,
             api_post_recordings,
         )
-        from .models import (
-            Recording,
-        )
+
+        # Make sure no recordings exist
         get_request = testing.DummyRequest()
         page = api_get_recordings(get_request)
         self.assertEqual(page, [])
 
+        # Create Recording
+        start_time = convert_to_utc_seconds(get_current_time())
+        end_time = start_time + 300
         post_request = testing.DummyRequest(post={
             'channel': 3,
-            'start_time': 0,
-            'end_time': 0,
+            'start_time': start_time,
+            'end_time': end_time,
         })
         page = api_post_recordings(post_request)
         self.assertEqual(page, [{
+            'id': 1,
             'channel': 3,
-            'start_time': 0,
-            'end_time': 0,
+            'start_time': start_time,
+            'end_time': end_time,
+            'tuner': 1,
+        }])
+
+        # Ensure that two recordings cannot happen at the same time
+        page = api_post_recordings(post_request)
+        self.assertEqual(page, [{
+            "status": "failed",
+            "message": "No tuner is available.",
+        }])
+
+        # Ensure Recording Exists
+        get_request2 = testing.DummyRequest()
+        page = api_get_recordings(get_request2)
+        self.assertEqual(page, [{
+            'id': 1,
+            'channel': 3,
+            'start_time': start_time,
+            'end_time': end_time,
             'tuner': 1,
         }])
