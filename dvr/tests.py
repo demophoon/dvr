@@ -156,9 +156,7 @@ class TestSetRecording(unittest.TestCase):
         }])
 
         # Create Recording with start date before current time
-
         dvr.assets.get_current_time = lambda: convert_to_datetime(300)
-
         start_time = convert_to_utc_seconds(dvr.assets.get_current_time()) - 250
         end_time = 550
         post_request = testing.DummyRequest(post={
@@ -173,4 +171,106 @@ class TestSetRecording(unittest.TestCase):
             'start_time': 300,
             'end_time': 550,
             'tuner': 1,
+        })
+
+        # Check for invalid time ranges
+        dvr.assets.get_current_time = lambda: convert_to_datetime(300)
+        start_time = 900
+        end_time = 600
+        post_request = testing.DummyRequest(post={
+            'channel': 3,
+            'start_time': start_time,
+            'end_time': end_time,
+        })
+        page = api_post_recordings(post_request)
+        self.assertEqual(page, {
+            "status": "failed",
+            "message": "Invalid time range",
+        })
+
+
+class TestMultipleTunerRecording(unittest.TestCase):
+
+    def setUp(self):
+        self.config = testing.setUp()
+        import dvr
+        from sqlalchemy import create_engine
+        from .models import (
+            Base,
+            DBSession,
+            Tuner,
+        )
+
+        dvr.assets.get_current_time = lambda: convert_to_datetime(0)
+
+        engine = create_engine('sqlite://')
+        DBSession.configure(bind=engine)
+        Base.metadata.create_all(engine)
+        with transaction.manager:
+            model = Tuner(name='Base Tuner')
+            DBSession.add(model)
+            model = Tuner(name='Secondary Tuner')
+            DBSession.add(model)
+
+    def tearDown(self):
+        DBSession.remove()
+        testing.tearDown()
+
+    def test_it(self):
+        import dvr
+        from .views import (
+            api_get_recordings,
+            api_post_recordings,
+        )
+
+        # Make sure no recordings exist
+        get_request = testing.DummyRequest()
+        page = api_get_recordings(get_request)
+        self.assertEqual(page, [])
+
+        self.assertEqual(dvr.assets.get_current_time(), convert_to_datetime(0))
+
+        # Create Recording on first tuner
+        start_time = convert_to_utc_seconds(dvr.assets.get_current_time())
+        end_time = start_time + 300
+        post_request = testing.DummyRequest(post={
+            'channel': 3,
+            'start_time': start_time,
+            'end_time': end_time,
+        })
+        page = api_post_recordings(post_request)
+        self.assertEqual(page, {
+            'id': 1,
+            'channel': 3,
+            'start_time': start_time,
+            'end_time': end_time,
+            'tuner': 1,
+        })
+
+        dvr.assets.get_current_time = lambda: convert_to_datetime(150)
+
+        # Create Recording on second tuner with overlap
+        start_time = convert_to_utc_seconds(dvr.assets.get_current_time())
+        end_time = start_time + 300
+        post_request = testing.DummyRequest(post={
+            'channel': 3,
+            'start_time': start_time,
+            'end_time': end_time,
+        })
+        page = api_post_recordings(post_request)
+        self.assertEqual(page, {
+            'id': 2,
+            'channel': 3,
+            'start_time': start_time,
+            'end_time': end_time,
+            'tuner': 2,
+        })
+
+        dvr.assets.get_current_time = lambda: convert_to_datetime(200)
+
+        # Ensure that three recordings cannot happen at the same time
+        page = api_post_recordings(post_request)
+        self.assertEqual(page, {
+            "status": "failed",
+            "message": "No tuner is available.",
         })

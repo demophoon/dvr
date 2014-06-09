@@ -6,6 +6,7 @@ from .assets import (
     create_recording,
     TunerUnavaliable,
     TunerDoesNotExist,
+    InvalidTimeRange,
 )
 from .models import (
     DBSession,
@@ -100,6 +101,12 @@ def api_post_recordings(request):
         return {
             "status": "failed",
             "message": "Tuner does not exist",
+        }
+    except InvalidTimeRange:
+        request.response.status = 400
+        return {
+            "status": "failed",
+            "message": "Invalid time range",
         }
     return {
         "id": new_recording.id,

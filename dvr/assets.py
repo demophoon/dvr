@@ -23,6 +23,8 @@ def create_recording(channel, start_time, end_time, tuner_id=None):
 
     if start_time < get_current_time():
         start_time = get_current_time()
+    if end_time < get_current_time() or end_time < start_time:
+        raise InvalidTimeRange()
     # Find next available tuner
     if not tuner_id:
         tuners = DBSession.query(Tuner).all()
@@ -61,4 +63,8 @@ class TunerUnavaliable(Exception):
 
 
 class TunerDoesNotExist(Exception):
+    pass
+
+
+class InvalidTimeRange(Exception):
     pass
