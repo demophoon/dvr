@@ -17,11 +17,10 @@ from sqlalchemy.orm import (
 
 from zope.sqlalchemy import ZopeTransactionExtension
 
-from .assets import get_current_time
-
-
 DBSession = scoped_session(sessionmaker(extension=ZopeTransactionExtension()))
 Base = declarative_base()
+
+from .assets import get_current_time
 
 
 class Tuner(Base):

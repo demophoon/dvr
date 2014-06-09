@@ -3,6 +3,9 @@ from pyramid.view import view_config
 from .assets import (
     convert_to_utc_seconds,
     convert_to_datetime,
+    create_recording,
+    TunerUnavaliable,
+    TunerDoesNotExist,
 )
 from .models import (
     DBSession,
@@ -79,44 +82,28 @@ def api_post_recordings(request):
             end_time = int(end_time)
     start_time = convert_to_datetime(start_time)
     end_time = convert_to_datetime(end_time)
-    if not tuner_id:
-        tuners = DBSession.query(Tuner).all()
-        next_tuner = None
-        for tuner in tuners:
-            if tuner.can_record(start_time):
-                next_tuner = tuner
-                break
-        if not next_tuner:
-            request.response.status = 409
-            return {
-                "status": "failed",
-                "message": "No tuner is available.",
-            }
-        tuner = next_tuner
-    else:
-        tuner = DBSession.query(Tuner).filter(
-            Tuner.id == tuner_id,
-        ).first()
-        if not tuner:
-            return {
-                "status": "failed",
-                "message": "Tuner does not exist",
-            }
-    new_recording = Recording(
-        channel=channel,
-        tuner_id=tuner.id,
-        start_time=start_time,
-        end_time=end_time,
-    )
-    DBSession.add(new_recording)
-    DBSession.flush()
-    return [{
+
+    try:
+        new_recording = create_recording(channel, start_time, end_time, tuner_id)
+    except TunerUnavaliable:
+        request.response.status = 409
+        return {
+            "status": "failed",
+            "message": "No tuner is available.",
+        }
+    except TunerDoesNotExist:
+        request.response.status = 404
+        return {
+            "status": "failed",
+            "message": "Tuner does not exist",
+        }
+    return {
         "id": new_recording.id,
         "channel": new_recording.channel,
         "tuner": new_recording.tuner_id,
         "start_time": convert_to_utc_seconds(new_recording.start_time),
         "end_time": convert_to_utc_seconds(new_recording.end_time),
-    }]
+    }
 
 
 def includeme(config):

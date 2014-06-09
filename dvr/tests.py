@@ -84,13 +84,13 @@ class TestSetRecording(unittest.TestCase):
             'end_time': end_time,
         })
         page = api_post_recordings(post_request)
-        self.assertEqual(page, [{
+        self.assertEqual(page, {
             'id': 1,
             'channel': 3,
             'start_time': start_time,
             'end_time': end_time,
             'tuner': 1,
-        }])
+        })
 
         # Ensure that two recordings cannot happen at the same time
         page = api_post_recordings(post_request)
@@ -99,9 +99,46 @@ class TestSetRecording(unittest.TestCase):
             "message": "No tuner is available.",
         })
 
+        # Ensure that we cannot push recording to a non-existent tuner
+        post_request = testing.DummyRequest(post={
+            'channel': 3,
+            'start_time': start_time,
+            'end_time': end_time,
+            'tuner': 2,
+        })
+        page = api_post_recordings(post_request)
+        self.assertEqual(page, {
+            "status": "failed",
+            "message": "Tuner does not exist",
+        })
+
+        # Ensure that Time formats are correct
+        post_request = testing.DummyRequest(post={
+            'channel': 3,
+            'start_time': "12:00am",
+            'end_time': "7:00pm",
+        })
+        page = api_post_recordings(post_request)
+        self.assertEqual(page, {
+            "status": "failed",
+            "message": "Invalid start time",
+        })
+
+        # Ensure that channel is an int
+        post_request = testing.DummyRequest(post={
+            'channel': "a",
+            'start_time': start_time,
+            'end_time': end_time,
+        })
+        page = api_post_recordings(post_request)
+        self.assertEqual(page, {
+            "status": "failed",
+            "message": "Invalid channel",
+        })
+
         # Ensure Recording Exists
-        get_request2 = testing.DummyRequest()
-        page = api_get_recordings(get_request2)
+        get_request = testing.DummyRequest()
+        page = api_get_recordings(get_request)
         self.assertEqual(page, [{
             'id': 1,
             'channel': 3,
