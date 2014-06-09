@@ -77,9 +77,15 @@ def api_post_recordings(request):
             }
         else:
             end_time = int(end_time)
+    start_time = convert_to_datetime(start_time)
+    end_time = convert_to_datetime(end_time)
     if not tuner_id:
-        next_tuner = DBSession.query(Tuner).filter(
-            Tuner.can_record(start_time)).first()
+        tuners = DBSession.query(Tuner).all()
+        next_tuner = None
+        for tuner in tuners:
+            if tuner.can_record(start_time):
+                next_tuner = tuner
+                break
         if not next_tuner:
             request.response.status = 409
             return {
@@ -99,8 +105,8 @@ def api_post_recordings(request):
     new_recording = Recording(
         channel=channel,
         tuner_id=tuner.id,
-        start_time=convert_to_datetime(start_time),
-        end_time=convert_to_datetime(end_time),
+        start_time=start_time,
+        end_time=end_time,
     )
     DBSession.add(new_recording)
     DBSession.flush()

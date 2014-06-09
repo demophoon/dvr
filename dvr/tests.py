@@ -94,10 +94,10 @@ class TestSetRecording(unittest.TestCase):
 
         # Ensure that two recordings cannot happen at the same time
         page = api_post_recordings(post_request)
-        self.assertEqual(page, [{
+        self.assertEqual(page, {
             "status": "failed",
             "message": "No tuner is available.",
-        }])
+        })
 
         # Ensure Recording Exists
         get_request2 = testing.DummyRequest()

@@ -36,13 +36,13 @@ class Tuner(Base):
 
     recordings = relationship("Recording", backref="tuner")
 
-    @classmethod
-    def get_current_recordings(klass):
-        return klass.get_recordings(get_current_time())
+    def get_current_recordings(self):
+        return self.get_recordings(get_current_time())
 
-    @classmethod
-    def get_recordings(klass, record_time):
-        recordings = DBSession.query(Recording).filter(
+    def get_recordings(self, record_time):
+        recordings = DBSession.query(Recording).join(Tuner).filter(
+            self.id == Recording.tuner_id,
+        ).filter(
             and_(
                 record_time >= Recording.start_time,
                 record_time < Recording.end_time,
@@ -50,11 +50,10 @@ class Tuner(Base):
         ).all()
         return recordings
 
-    @classmethod
-    def can_record(klass, record_time):
+    def can_record(self, record_time):
         return len(
-            klass.get_recordings(record_time)
-        ) < klass.max_shows_to_record
+            self.get_recordings(record_time)
+        ) < self.max_shows_to_record
 
 
 class Recording(Base):
