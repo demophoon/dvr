@@ -16,8 +16,13 @@ from .models import (
 
 @view_config(route_name='index', renderer='templates/index.pt')
 def index(request):
-    recordings = DBSession.query(Recording).all()
     tuners = DBSession.query(Tuner).all()
+
+    recordings = []
+    for tuner in DBSession.query(Tuner).all():
+        for recording in tuner.get_current_recordings():
+            recordings.append(recording)
+
     return {
         'recordings': recordings,
         'tuners': tuners,
@@ -30,16 +35,15 @@ def index(request):
     request_method="GET",
 )
 def api_get_recordings(request):
-    recordings = []
-    for tuner in DBSession.query(Tuner).all():
-        for recording in tuner.get_current_recordings():
-            recordings.append({
-                "id": recording.id,
-                "channel": recording.channel,
-                "tuner": recording.tuner.id,
-                "start_time": convert_to_utc_seconds(recording.start_time),
-                "end_time": convert_to_utc_seconds(recording.end_time),
-            })
+    recordings = [
+        {
+            "id": recording.id,
+            "channel": recording.channel,
+            "tuner": recording.tuner.id,
+            "start_time": convert_to_utc_seconds(recording.start_time),
+            "end_time": convert_to_utc_seconds(recording.end_time),
+        } for recording in DBSession.query(Recording).all()
+    ]
     return recordings
 
 

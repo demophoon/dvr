@@ -7,7 +7,7 @@ def get_current_time():
 
 def convert_to_utc_seconds(date):
     beginning_of_time = datetime.datetime(1970, 1, 1)
-    return (date - beginning_of_time).total_seconds()
+    return int((date - beginning_of_time).total_seconds())
 
 
 def convert_to_datetime(sec):
@@ -21,6 +21,8 @@ def create_recording(channel, start_time, end_time, tuner_id=None):
         Recording,
     )
 
+    if start_time < get_current_time():
+        start_time = get_current_time()
     # Find next available tuner
     if not tuner_id:
         tuners = DBSession.query(Tuner).all()

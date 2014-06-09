@@ -7,6 +7,7 @@ from .models import DBSession
 from .assets import (
     get_current_time,
     convert_to_utc_seconds,
+    convert_to_datetime,
 )
 
 
@@ -47,12 +48,16 @@ class TestSetRecording(unittest.TestCase):
 
     def setUp(self):
         self.config = testing.setUp()
+        import dvr
         from sqlalchemy import create_engine
         from .models import (
             Base,
             DBSession,
             Tuner,
         )
+
+        dvr.assets.get_current_time = lambda: convert_to_datetime(0)
+
         engine = create_engine('sqlite://')
         DBSession.configure(bind=engine)
         Base.metadata.create_all(engine)
@@ -65,6 +70,7 @@ class TestSetRecording(unittest.TestCase):
         testing.tearDown()
 
     def test_it(self):
+        import dvr
         from .views import (
             api_get_recordings,
             api_post_recordings,
@@ -75,8 +81,10 @@ class TestSetRecording(unittest.TestCase):
         page = api_get_recordings(get_request)
         self.assertEqual(page, [])
 
+        self.assertEqual(dvr.assets.get_current_time(), convert_to_datetime(0))
+
         # Create Recording
-        start_time = convert_to_utc_seconds(get_current_time())
+        start_time = convert_to_utc_seconds(dvr.assets.get_current_time())
         end_time = start_time + 300
         post_request = testing.DummyRequest(post={
             'channel': 3,
@@ -146,3 +154,23 @@ class TestSetRecording(unittest.TestCase):
             'end_time': end_time,
             'tuner': 1,
         }])
+
+        # Create Recording with start date before current time
+
+        dvr.assets.get_current_time = lambda: convert_to_datetime(300)
+
+        start_time = convert_to_utc_seconds(dvr.assets.get_current_time()) - 250
+        end_time = 550
+        post_request = testing.DummyRequest(post={
+            'channel': 3,
+            'start_time': start_time,
+            'end_time': end_time,
+        })
+        page = api_post_recordings(post_request)
+        self.assertEqual(page, {
+            'id': 2,
+            'channel': 3,
+            'start_time': 300,
+            'end_time': 550,
+            'tuner': 1,
+        })
