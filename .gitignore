@@ -1,5 +1,5 @@
 *.pyc
 *.sqlite
-*.egg-info/
+*.egg*
 *.ropeproject
 dev.ini

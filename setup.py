@@ -18,6 +18,7 @@ requires = [
     'zope.sqlalchemy',
     'waitress',
     'webtest',
+    'docopt',
 ]
 
 setup(name='dvr',
@@ -44,5 +45,6 @@ setup(name='dvr',
       main = dvr:main
       [console_scripts]
       initialize_dvr_db = dvr.scripts.initializedb:main
+      dvr_admin = dvr.scripts.cli:main
       """,
       )

@@ -14,6 +14,19 @@ def convert_to_datetime(sec):
     return datetime.datetime.utcfromtimestamp(float(sec))
 
 
+def delete_recording(recording_id):
+    from .models import (
+        DBSession,
+        Recording,
+    )
+    record = DBSession.query(Recording).filter(Recording.id == recording_id).first()
+    if not record:
+        raise RecordingDoesNotExist()
+    DBSession.delete(record)
+    DBSession.flush()
+    return True
+
+
 def create_recording(channel, start_time, end_time, tuner_id=None):
     from .models import (
         DBSession,
@@ -67,4 +80,8 @@ class TunerDoesNotExist(Exception):
 
 
 class InvalidTimeRange(Exception):
+    pass
+
+
+class RecordingDoesNotExist(Exception):
     pass

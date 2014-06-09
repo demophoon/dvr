@@ -4,9 +4,11 @@ from .assets import (
     convert_to_utc_seconds,
     convert_to_datetime,
     create_recording,
+    delete_recording,
     TunerUnavaliable,
     TunerDoesNotExist,
     InvalidTimeRange,
+    RecordingDoesNotExist,
 )
 from .models import (
     DBSession,
@@ -116,7 +118,27 @@ def api_post_recordings(request):
         "end_time": convert_to_utc_seconds(new_recording.end_time),
     }
 
+@view_config(
+    route_name='api_delete_recordings',
+    renderer='json',
+    request_method="DELETE",
+)
+def api_delete_recordings(request):
+    recording_id = request.matchdict.get("id")
+    try:
+        delete_recording(recording_id)
+    except RecordingDoesNotExist:
+        request.response.status = 404
+        return {
+            "status": "failed",
+            "message": "Record does not exist.",
+        }
+    return {
+        "status": "success",
+        "message": "Recording deleted",
+    }
 
 def includeme(config):
     config.add_route('index', '/')
     config.add_route('api_recordings', '/api/v1/recordings')
+    config.add_route('api_delete_recordings', '/api/v1/recording/{id}')
