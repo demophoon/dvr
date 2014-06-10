@@ -11,6 +11,8 @@
         </style>
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
         <script src='//netdna.bootstrapcdn.com/bootstrap/3.1.1/js/bootstrap.min.js'></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/datejs/1.0/date.min.js"></script>
+        <script src="//cdnjs.cloudflare.com/ajax/libs/knockout/3.1.0/knockout-min.js"></script>
     </head>
     <body>
         <div class='navbar navbar-default navbar-fixed-top'>
@@ -26,7 +28,6 @@
                 <div class="collapse navbar-collapse">
                     <ul class='nav navbar-nav'>
                         <li class='active'><a href='/'>Recordings</a></li>
-                        <li><a href='/tuners'>Tuners</a></li>
                     </ul>
                 </div>
             </div>
@@ -43,6 +44,104 @@
                     No shows are currently being recorded.
                 </div>
             </div>
+
+            <div class='well'>
+                <h3>Add a recording</h3>
+
+                <form role="form">
+                    <div class='form-group'>
+                        <label for="channel">Channel</label>
+                        <input class="form-control" type="text" id="channel" data-bind="value: channel"/>
+                    </div>
+                    <div class='form-group'>
+                        <label for="start">Start time</label>
+                        <input class="form-control" type="text" id="start" data-bind="value: start_time"/>
+                    </div>
+                    <div class='form-group'>
+                        <label for="end">End time</label>
+                        <input class="form-control" type="text" id="end" data-bind="value: end_time"/>
+                    </div>
+                </form>
+                <input type='button' data-bind='click: add_recording' class='btn btn-primary' value='Start Recording' name='' />
+            </div>
+
+            <div class='well'>
+                <h3>Query Tuners</h3>
+                <form role="form">
+                    <div class='form-group'>
+                        <label for="time">Time</label>
+                        <input class="form-control" type="text" id="time" data-bind="value: query_time"/>
+                    </div>
+                </form>
+                <input type='button' data-bind='click: query_tuner' class='btn btn-primary' value='Search' name='' />
+            </div>
+
+            <script type="text/javascript" charset="utf-8">
+            var ViewModel;
+                (function() {
+                    var viewModel = function() {
+                        var me = this;
+                        me.channel = ko.observable("3");
+                        me.start_time = ko.observable(new Date().toDateString() + " 7:00pm");
+                        me.end_time = ko.observable(new Date().toDateString() + " 8:00pm");
+                        me.computed_start = ko.computed(function() {
+                            return ~~(Date.parse(me.start_time()) / 1000);
+                        });
+                        me.computed_end = ko.computed(function() {
+                            return ~~(Date.parse(me.end_time()) / 1000);
+                        });
+                        me.add_recording = function() {
+                            $.ajax({
+                                url: "/api/v1/recordings",
+                                type: "POST",
+                                data: {
+                                    "channel": me.channel(),
+                                    "start_time": me.computed_start(),
+                                    "end_time": me.computed_end(),
+                                },
+                                success: function(data) {
+                                    alert("Successfully added recording");
+                                },
+                                error: function(data) {
+                                    alert(data.responseJSON.message);
+                                }
+                            });
+                            console.log(me.channel());
+                            console.log(me.computed_start());
+                            console.log(me.computed_end());
+                        }
+
+                        me.query_time = ko.observable(new Date().toDateString() + " 7:00pm");
+                        me.computed_query_time = ko.computed(function() {
+                            return ~~(Date.parse(me.query_time()) / 1000);
+                        })
+                        me.query_tuner = function() {
+                            $.ajax({
+                                url: "/api/v1/recordings",
+                                type: "GET",
+                                data: {
+                                    "query_time": me.computed_query_time(),
+                                },
+                                success: function(data) {
+                                    console.log(data);
+                                    fstr = "";
+                                    for (tuner in data) {
+                                    if (data[tuner].length > 0) {
+                                            fstr += "Tuner " + tuner + ": Recording " + data[tuner].join(", ");
+                                        } else {
+                                            fstr += "Tuner " + tuner + ": Not Recording";
+                                        }
+                                        fstr += "\n";
+                                    }
+                                    alert(fstr);
+                                },
+                            });
+                        }
+                    }
+                    ViewModel = new viewModel();
+                    ko.applyBindings(ViewModel);
+                }());
+            </script>
         </div>
     </body>
 </html>

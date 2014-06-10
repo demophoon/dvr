@@ -5,6 +5,7 @@ from .assets import (
     convert_to_datetime,
     create_recording,
     delete_recording,
+    get_action,
     TunerUnavaliable,
     TunerDoesNotExist,
     InvalidTimeRange,
@@ -38,6 +39,9 @@ def index(request):
     request_method="GET",
 )
 def api_get_recordings(request):
+    query_time = request.GET.get("query_time")
+    if query_time:
+        return get_action(convert_to_datetime(query_time))
     recordings = [
         {
             "id": recording.id,
