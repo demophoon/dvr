@@ -107,6 +107,20 @@ class TestSetRecording(unittest.TestCase):
             "message": "No tuner is available.",
         })
 
+        # Ensure that two recordings cannot overlap
+        start_time = 150
+        end_time = 400
+        post_request = testing.DummyRequest(post={
+            'channel': 3,
+            'start_time': start_time,
+            'end_time': end_time,
+        })
+        page = api_post_recordings(post_request)
+        self.assertEqual(page, {
+            "status": "failed",
+            "message": "No tuner is available.",
+        })
+
         # Ensure that we cannot push recording to a non-existent tuner
         post_request = testing.DummyRequest(post={
             'channel': 3,
@@ -150,15 +164,15 @@ class TestSetRecording(unittest.TestCase):
         self.assertEqual(page, [{
             'id': 1,
             'channel': 3,
-            'start_time': start_time,
-            'end_time': end_time,
+            'start_time': 0,
+            'end_time': 300,
             'tuner': 1,
         }])
 
         # Create Recording with start date before current time
-        dvr.assets.get_current_time = lambda: convert_to_datetime(300)
+        dvr.assets.get_current_time = lambda: convert_to_datetime(1300)
         start_time = convert_to_utc_seconds(dvr.assets.get_current_time()) - 250
-        end_time = 550
+        end_time = 1550
         post_request = testing.DummyRequest(post={
             'channel': 3,
             'start_time': start_time,
@@ -168,8 +182,8 @@ class TestSetRecording(unittest.TestCase):
         self.assertEqual(page, {
             'id': 2,
             'channel': 3,
-            'start_time': 300,
-            'end_time': 550,
+            'start_time': 1300,
+            'end_time': 1550,
             'tuner': 1,
         })
 

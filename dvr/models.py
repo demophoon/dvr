@@ -5,6 +5,7 @@ from sqlalchemy import (
     DateTime,
     ForeignKey,
     and_,
+    or_,
 )
 
 from sqlalchemy.ext.declarative import declarative_base
@@ -49,9 +50,47 @@ class Tuner(Base):
         ).all()
         return recordings
 
-    def can_record(self, record_time):
+    def get_recordings_between(self, start_time, end_time):
+
+        recordings = DBSession.query(Recording).join(Tuner).filter(
+            self.id == Recording.tuner_id,
+        ).filter(
+            or_(
+                # Segment is on start_time border
+                and_(
+                    Recording.end_time >= start_time,
+                    Recording.end_time <= end_time,
+                    Recording.start_time <= start_time,
+                    Recording.start_time < end_time,
+                ),
+                # Segment is on end_time border
+                and_(
+                    Recording.end_time >= start_time,
+                    Recording.end_time >= end_time,
+                    Recording.start_time <= end_time,
+                    Recording.start_time >= start_time,
+                ),
+                # Between start_time and end_time
+                and_(
+                    Recording.start_time >= start_time,
+                    Recording.end_time >= start_time,
+                    Recording.start_time <= end_time,
+                    Recording.end_time <= end_time,
+                ),
+                # Segment is greater than queried period
+                and_(
+                    Recording.start_time <= start_time,
+                    Recording.start_time <= end_time,
+                    Recording.end_time >= start_time,
+                    Recording.end_time >= end_time,
+                ),
+            )
+        ).all()
+        return recordings
+
+    def can_record(self, start_time, end_time):
         return len(
-            self.get_recordings(record_time)
+            self.get_recordings_between(start_time, end_time)
         ) < self.max_shows_to_record
 
 

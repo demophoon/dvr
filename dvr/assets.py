@@ -43,7 +43,7 @@ def create_recording(channel, start_time, end_time, tuner_id=None):
         tuners = DBSession.query(Tuner).all()
         next_tuner = None
         for tuner in tuners:
-            if tuner.can_record(start_time):
+            if tuner.can_record(start_time, end_time):
                 next_tuner = tuner
                 break
         if not next_tuner:
