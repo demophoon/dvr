@@ -19,6 +19,7 @@ requires = [
     'waitress',
     'webtest',
     'docopt',
+    'parsedatetime',
 ]
 
 setup(name='dvr',

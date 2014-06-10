@@ -14,6 +14,31 @@ def convert_to_datetime(sec):
     return datetime.datetime.utcfromtimestamp(float(sec))
 
 
+def get_list():
+    from .models import (
+        DBSession,
+        Recording,
+    )
+    return [{
+        "id": x.id,
+        "start_time": x.start_time,
+        "end_time": x.end_time,
+        "channel": x.channel,
+        "tuner": x.tuner.id,
+    } for x in DBSession.query(Recording).all()]
+
+
+def get_action(time):
+    from .models import (
+        DBSession,
+        Tuner,
+    )
+    tuners = {}
+    for tuner in DBSession.query(Tuner).all():
+        tuners[tuner.id] = [x.channel for x in tuner.get_recordings(time)]
+    return tuners
+
+
 def delete_recording(recording_id):
     from .models import (
         DBSession,

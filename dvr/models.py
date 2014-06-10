@@ -58,14 +58,14 @@ class Tuner(Base):
             or_(
                 # Segment is on start_time border
                 and_(
-                    Recording.end_time >= start_time,
+                    Recording.end_time > start_time,
                     Recording.end_time <= end_time,
                     Recording.start_time <= start_time,
                     Recording.start_time < end_time,
                 ),
                 # Segment is on end_time border
                 and_(
-                    Recording.end_time >= start_time,
+                    Recording.end_time > start_time,
                     Recording.end_time >= end_time,
                     Recording.start_time <= end_time,
                     Recording.start_time >= start_time,
@@ -73,7 +73,7 @@ class Tuner(Base):
                 # Between start_time and end_time
                 and_(
                     Recording.start_time >= start_time,
-                    Recording.end_time >= start_time,
+                    Recording.end_time > start_time,
                     Recording.start_time <= end_time,
                     Recording.end_time <= end_time,
                 ),
@@ -81,7 +81,7 @@ class Tuner(Base):
                 and_(
                     Recording.start_time <= start_time,
                     Recording.start_time <= end_time,
-                    Recording.end_time >= start_time,
+                    Recording.end_time > start_time,
                     Recording.end_time >= end_time,
                 ),
             )
