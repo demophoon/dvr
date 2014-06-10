@@ -4,11 +4,8 @@ dvr README
 Getting Started
 ---------------
 
-- cd <directory containing this file>
-
-- $VENV/bin/python setup.py develop
-
-- $VENV/bin/initialize_dvr_db development.ini
-
-- $VENV/bin/pserve development.ini
-
+1. Create a virtualenv for python
+2. Run `python setup.py develop` to install any required libraries
+3. Run `initialize_dvr_db ./production.ini` to initialize the database
+4. To run the web server run pserve ./production.ini
+5. The command line utility is installed on your path and can be accessed with `dvr_admin` (run `dvr_admin` to get the usage doc)
